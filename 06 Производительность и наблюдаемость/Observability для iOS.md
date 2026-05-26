@@ -103,17 +103,4 @@ struct RedactingLogger: AppLogger {
 - Можно ли связать мобильный лог с backend-логом?  
   Ответ: да, если request id/trace id проходит через headers и попадает в обе стороны.
 
-## Практика на вечер
-Выбери один flow: push -> payment screen. Добавь:
-
-- flow id;
-- route parsed event;
-- auth restored event;
-- network request id;
-- resolver result;
-- fallback shown event;
-- redaction-тест, который доказывает, что email/token не уходят в лог.
-
-Мини-челлендж: сделай словарь event names и запрети свободные строки на уровне API.
-
 Связано: [Observability](<Observability.md>), [Push Notifications в продакшене](<../03 Push Deep Links и флаги/Push Notifications в продакшене.md>), [Networking слой без сюрпризов](<../02 Сеть и данные/Networking слой без сюрпризов.md>), [Security (practical)](<../07 Безопасность/Security practical.md>)

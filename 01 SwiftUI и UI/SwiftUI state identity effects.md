@@ -56,11 +56,13 @@ final class HotelSearchViewModel: ObservableObject {
     @Published private(set) var state: State = .idle
 
     private let service: HotelSearchService
+    private let debounce: Duration?
     private var searchTask: Task<Void, Never>?
     private var latestRequestID: UUID?
 
-    init(service: HotelSearchService) {
+    init(service: HotelSearchService, debounce: Duration? = .milliseconds(250)) {
         self.service = service
+        self.debounce = debounce
     }
 
     func search(_ rawQuery: String) {
@@ -79,8 +81,10 @@ final class HotelSearchViewModel: ObservableObject {
 
         searchTask = Task { [service] in
             do {
-                try await Task.sleep(for: .milliseconds(250))
-                try Task.checkCancellation()
+                if let debounce {
+                    try await Task.sleep(for: debounce)
+                    try Task.checkCancellation()
+                }
 
                 let hotels = try await service.searchHotels(query: query)
                 try Task.checkCancellation()
@@ -133,10 +137,5 @@ final class HotelSearchViewModel: ObservableObject {
   Ответ: стабильный `id` должен приходить из домена. Индекс массива подходит только для статичного списка без удаления, сортировки и анимаций.
 - Понятно ли, что произойдет при deeplink, refresh и уходе со страницы?  
   Ответ: если это нельзя объяснить без запуска приложения, state machine экрана еще не доросла до продового сценария.
-
-## Практика на вечер
-Возьми экран со списком и поиском. Перепиши его state в `enum`, убери разрозненные флаги и добавь тест на сценарий: первый запрос стартовал, второй обогнал его, старый ответ не попал в UI.
-
-Мини-челлендж: добавь кеш так, чтобы кешированный результат показывался сразу, но ошибка refresh не стирала уже показанные данные.
 
 Связано: [SwiftUI architecture (advanced)](<SwiftUI architecture advanced.md>), [Structured Concurrency под нагрузкой](<../08 Concurrency/Structured Concurrency под нагрузкой.md>), [Unit UI Tests для сложных iOS флоу](<../04 Тесты CI и релиз/Unit UI Tests для сложных iOS флоу.md>), [Design System для iOS продукта](<Design System для iOS продукта.md>)

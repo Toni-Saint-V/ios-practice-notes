@@ -83,7 +83,4 @@ struct PaymentSummaryView: View {
 - Dynamic Type проверен на больших размерах?  
   Ответ: да, иначе «поддерживаем accessibility» остается декларацией.
 
-## Практика на вечер
-Открой один экран с формой и пройди его с VoiceOver: ввод, ошибка, исправление, success. Запиши места, где без визуального контекста непонятно, что происходит.
-
 Связано: [Design System для iOS продукта](<Design System для iOS продукта.md>), [SwiftUI state identity effects](<SwiftUI state identity effects.md>), [Unit UI Tests для сложных iOS флоу](<../04 Тесты CI и релиз/Unit UI Tests для сложных iOS флоу.md>)

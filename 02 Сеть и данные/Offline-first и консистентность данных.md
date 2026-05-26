@@ -65,12 +65,12 @@ enum DataSource<Value> {
 actor BookingRepository {
     private let api: BookingAPI
     private let store: BookingStore
-    private let clock: Clock
+    private let now: () -> Date
 
-    init(api: BookingAPI, store: BookingStore, clock: Clock) {
+    init(api: BookingAPI, store: BookingStore, now: @escaping () -> Date = Date.init) {
         self.api = api
         self.store = store
-        self.clock = clock
+        self.now = now
     }
 
     func booking(id: String) async throws -> AsyncThrowingStream<DataSource<Booking>, Error> {
@@ -79,7 +79,7 @@ actor BookingRepository {
                 if let cached = try await store.loadBooking(id: id) {
                     continuation.yield(.cache(
                         value: cached.value,
-                        freshness: cached.freshness(now: clock.now)
+                        freshness: cached.freshness(now: now())
                     ))
                 }
 
@@ -123,16 +123,5 @@ actor BookingRepository {
   Ответ: через `freshness/source` в state. Если UI видит только модель, он не сможет честно показать «данные сохранены, обновление не прошло».
 - Есть ли конфликтная стратегия, кроме «перезаписать»?  
   Ответ: хотя бы для пользовательского текста и локальных правок нужна стратегия merge/resolve, а не слепой last write wins.
-
-## Практика на вечер
-Сделай репозиторий для бронирования:
-
-- сначала отдает stale cache;
-- потом пытается сеть;
-- при ошибке не стирает content;
-- перед оплатой требует fresh status;
-- после logout чистит pending mutations.
-
-Мини-челлендж: добавь конфликт для локальной заметки: сервер изменил заметку, пользователь тоже изменил заметку offline.
 
 Связано: [Persistence + caching strategy](<Persistence + caching strategy.md>), [Networking слой без сюрпризов](<Networking слой без сюрпризов.md>), [Unit UI Tests для сложных iOS флоу](<../04 Тесты CI и релиз/Unit UI Tests для сложных iOS флоу.md>), [Security (practical)](<../07 Безопасность/Security practical.md>)

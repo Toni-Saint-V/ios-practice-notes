@@ -100,7 +100,4 @@ enum ImageLoadingError: Error {
 - Placeholder не ломает layout?  
   Ответ: размеры placeholder, success и error должны быть стабильны.
 
-## Практика на вечер
-Открой экран со списком картинок и замерь memory после 30 секунд быстрого скролла. Потом проверь, сколько задач остается активными после ухода со страницы.
-
 Связано: [Performance budgets и Instruments](<Performance budgets и Instruments.md>), [SwiftUI state identity effects](<../01 SwiftUI и UI/SwiftUI state identity effects.md>), [Networking слой без сюрпризов](<../02 Сеть и данные/Networking слой без сюрпризов.md>), [Instruments](<Instruments.md>)

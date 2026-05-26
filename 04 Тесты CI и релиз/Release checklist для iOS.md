@@ -62,7 +62,4 @@ flowchart TD
 - Есть kill switch?  
   Ответ: для рискованной фичи лучше иметь выключатель без нового билда.
 
-## Практика на вечер
-Составь release checklist из 10 пунктов для своего приложения. Удали все, что не проверяется реально. Добавь только то, что уже ломалось или может стоить денег/доверия.
-
 Связано: [Crash-free не равно stable](<Crash-free не равно stable.md>), [Feature Flags и Remote Config](<../03 Push Deep Links и флаги/Feature Flags и Remote Config.md>), [Push Notifications в продакшене](<../03 Push Deep Links и флаги/Push Notifications в продакшене.md>), [Offline-first и консистентность данных](<../02 Сеть и данные/Offline-first и консистентность данных.md>)

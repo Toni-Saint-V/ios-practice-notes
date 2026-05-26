@@ -50,25 +50,30 @@ final class PushRoutingStore: ObservableObject {
     @Published private(set) var pendingRoute: PushRoute?
 
     private var isNavigationReady = false
+    private let openRoute: (PushRoute) -> Void
+
+    init(openRoute: @escaping (PushRoute) -> Void) {
+        self.openRoute = openRoute
+    }
 
     func handleNotificationResponse(_ userInfo: [AnyHashable: Any]) {
         guard let route = PushRouteFactory.route(from: userInfo) else { return }
 
-        if isNavigationReady {
-            pendingRoute = route
-        } else {
-            pendingRoute = route
-        }
+        pendingRoute = route
+        drainIfPossible()
     }
 
     func markNavigationReady() {
         isNavigationReady = true
+        drainIfPossible()
     }
 
-    func consumePendingRoute() -> PushRoute? {
-        guard isNavigationReady else { return nil }
+    private func drainIfPossible() {
+        guard isNavigationReady else { return }
         defer { pendingRoute = nil }
-        return pendingRoute
+        if let pendingRoute {
+            openRoute(pendingRoute)
+        }
     }
 }
 
@@ -100,14 +105,10 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
 ```swift
 .task {
     routingStore.markNavigationReady()
-
-    if let route = routingStore.consumePendingRoute() {
-        router.open(route)
-    }
 }
 ```
 
-В настоящем приложении `consumePendingRoute` обычно вызывается не один раз: после восстановления сессии, после загрузки feature flags, после построения root navigation. Главное — не считать tap по пушу обычным нажатием внутри уже готового UI.
+В настоящем приложении `drainIfPossible` обычно зависит еще от сессии, feature flags и root navigation. Главное — не считать tap по пушу обычным нажатием внутри уже готового UI.
 
 ## Редкие поломки
 - APNs token меняется. Его нельзя считать вечным.
@@ -131,16 +132,5 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
   Ответ: должен быть. APNs token может обновиться, а повторная регистрация не должна плодить дубли на backend.
 - Foreground push не ломает текущий сценарий пользователя?  
   Ответ: foreground-пуш чаще показывает мягкое уведомление или обновляет state, а не вырывает пользователя на другой экран.
-
-## Практика на вечер
-Сделай локальный `PushRouteFactory` и набор тестов на payload:
-
-- валидный order push;
-- неизвестный type;
-- отсутствующий id;
-- объект требует авторизации;
-- payload старой версии.
-
-Мини-челлендж: добавь очередь pending routes, но защити ее от повторного открытия одного и того же route.
 
 Связано: [SwiftUI state identity effects](<../01 SwiftUI и UI/SwiftUI state identity effects.md>), [Networking слой без сюрпризов](<../02 Сеть и данные/Networking слой без сюрпризов.md>)

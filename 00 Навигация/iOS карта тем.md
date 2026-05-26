@@ -107,7 +107,6 @@ flowchart TD
 - реальный сценарий из продукта;
 - кодовый кейс на Swift;
 - редкие и неприятные случаи;
-- самопроверка с ответами;
-- практика на маленький вечерний разбор.
+- самопроверка с ответами.
 
-Связано: [Как читать iOS карту](<Как читать.md>), [Стиль заметок](<Стиль заметок.md>), [SwiftUI architecture (advanced)](<../01 SwiftUI и UI/SwiftUI architecture advanced.md>), [Swift Concurrency (advanced)](<../08 Concurrency/Swift Concurrency advanced.md>), [Networking resilience](<../02 Сеть и данные/Networking resilience.md>), [Async XCTest](<../04 Тесты CI и релиз/Async XCTest.md>), [Persistence + caching strategy](<../02 Сеть и данные/Persistence + caching strategy.md>), [Observability](<../06 Производительность и наблюдаемость/Observability.md>), [SPM и модули](<../05 Архитектура и границы/SPM и модули.md>), [Instruments](<../06 Производительность и наблюдаемость/Instruments.md>), [Security (practical)](<../07 Безопасность/Security practical.md>), [Живые кейсы](<../09 Живые кейсы/Живые кейсы.md>)
+Связано: [Как читать iOS карту](<Как читать.md>), [Формат разбора тем](<Формат разбора тем.md>), [База Swift и UIKit](<../10 База Swift и UIKit/База Swift и UIKit.md>), [SwiftUI architecture (advanced)](<../01 SwiftUI и UI/SwiftUI architecture advanced.md>), [Swift Concurrency (advanced)](<../08 Concurrency/Swift Concurrency advanced.md>), [Networking resilience](<../02 Сеть и данные/Networking resilience.md>), [Async XCTest](<../04 Тесты CI и релиз/Async XCTest.md>), [Persistence + caching strategy](<../02 Сеть и данные/Persistence + caching strategy.md>), [Observability](<../06 Производительность и наблюдаемость/Observability.md>), [SPM и модули](<../05 Архитектура и границы/SPM и модули.md>), [Instruments](<../06 Производительность и наблюдаемость/Instruments.md>), [Security (practical)](<../07 Безопасность/Security practical.md>), [Живые кейсы](<../09 Живые кейсы/Живые кейсы.md>)

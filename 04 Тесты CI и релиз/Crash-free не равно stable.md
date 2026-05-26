@@ -89,7 +89,4 @@ final class PaymentOpenTracker {
 - Fallback считается нормой или деградацией?  
   Ответ: зависит от сценария. Но он должен быть видимым.
 
-## Практика на вечер
-Выбери один важный flow и выпиши не только crash, но и все «тихие провалы»: fallback, empty после ошибки, потерянный route, таймаут, повторный login, stale content.
-
 Связано: [Observability для iOS](<../06 Производительность и наблюдаемость/Observability для iOS.md>), [Push Notifications в продакшене](<../03 Push Deep Links и флаги/Push Notifications в продакшене.md>), [App Lifecycle Deep Links Navigation](<../03 Push Deep Links и флаги/App Lifecycle Deep Links Navigation.md>), [Release checklist для iOS](<Release checklist для iOS.md>)

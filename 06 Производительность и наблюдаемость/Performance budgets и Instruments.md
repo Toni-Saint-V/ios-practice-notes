@@ -105,15 +105,4 @@ final class CatalogViewModel: ObservableObject {
 - Оптимизация не ухудшила читаемость без причины?  
   Ответ: если код стал сложнее, выигрыш должен быть измерен. Иначе это технический долг под видом скорости.
 
-## Практика на вечер
-Возьми экран со списком и замерь:
-
-- time to first content;
-- main thread stalls;
-- memory после 3 минут скролла;
-- количество сетевых загрузок изображений;
-- повторные body-render при одном tap.
-
-Мини-челлендж: добавь signpost вокруг загрузки и маппинга, чтобы видеть путь от tap до content в Instruments.
-
 Связано: [Instruments](<Instruments.md>), [SwiftUI state identity effects](<../01 SwiftUI и UI/SwiftUI state identity effects.md>), [Networking слой без сюрпризов](<../02 Сеть и данные/Networking слой без сюрпризов.md>), [Observability](<Observability.md>)

@@ -128,9 +128,4 @@ struct PrimaryActionButtonStyle: ButtonStyle {
 - Можно ли запретить новый случайный стиль?  
   Ответ: лучше через component review, snapshot/preview matrix и запрет прямого доступа к сырым цветам в feature-коде.
 
-## Практика на вечер
-Выбери один часто повторяющийся элемент: primary button, price label, empty state или input. Опиши его контракт в Markdown: назначение, состояния, размеры, доступность, где нельзя использовать. Потом реализуй один SwiftUI-компонент и один UIKit-адаптер.
-
-Мини-челлендж: сделай preview matrix для light/dark, enabled/disabled/loading и двух размеров Dynamic Type.
-
 Связано: [SwiftUI state identity effects](<SwiftUI state identity effects.md>)

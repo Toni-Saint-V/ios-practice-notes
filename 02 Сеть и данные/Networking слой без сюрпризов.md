@@ -83,16 +83,24 @@ enum HTTPMethod {
     case post(idempotencyKey: String?)
     case put
     case delete
+}
 
-    var canAutomaticallyRetry: Bool {
+enum RetryPolicy {
+    case never
+    case safeRead
+    case idempotentMutation(key: String)
+
+    var canRetryAfterTimeout: Bool {
         switch self {
-        case .get, .put, .delete:
+        case .never:
+            return false
+        case .safeRead, .idempotentMutation:
             return true
-        case .post(let idempotencyKey):
-            return idempotencyKey != nil
         }
     }
+}
 
+extension HTTPMethod {
     var rawValue: String {
         switch self {
         case .get:
@@ -138,7 +146,7 @@ enum NetworkError: Error, Equatable {
 - Чем отличается отмена от ошибки?  
   Ответ: отмена — нормальный lifecycle-сценарий. Ее не показывают как alert и не считают failure.
 - Какие методы можно автоматически повторять?  
-  Ответ: безопасные чтения и операции с idempotency key. POST без ключа повторять опасно.
+  Ответ: не методы сами по себе, а операции с явной retry policy: безопасные чтения и мутации с idempotency key. POST/PUT/DELETE без политики повторять опасно.
 - Что произойдет при двух одновременных 401?  
   Ответ: должен быть один refresh token, остальные запросы ждут его результат.
 - Может ли старый ответ перетереть более новый state?  
@@ -153,6 +161,7 @@ enum NetworkError: Error, Equatable {
 struct Endpoint<Response: Decodable> {
     let path: String
     let method: HTTPMethod
+    let retryPolicy: RetryPolicy
 }
 
 struct TransportResponse {
@@ -211,7 +220,7 @@ final class NetworkClient {
         var request = URLRequest(url: baseURL.appendingPathComponent(endpoint.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))))
         request.httpMethod = endpoint.method.rawValue
 
-        let response = try await sendWithRetry(request, method: endpoint.method)
+        let response = try await sendWithRetry(request, retryPolicy: endpoint.retryPolicy)
 
         guard (200..<300).contains(response.statusCode) else {
             throw mapStatus(response.statusCode)
@@ -224,12 +233,12 @@ final class NetworkClient {
         }
     }
 
-    private func sendWithRetry(_ request: URLRequest, method: HTTPMethod) async throws -> TransportResponse {
+    private func sendWithRetry(_ request: URLRequest, retryPolicy: RetryPolicy) async throws -> TransportResponse {
         do {
             return try await transport.send(request)
         } catch is CancellationError {
             throw NetworkError.cancelled
-        } catch NetworkError.timeout where method.canAutomaticallyRetry {
+        } catch NetworkError.timeout where retryPolicy.canRetryAfterTimeout {
             try Task.checkCancellation()
             return try await transport.send(request)
         } catch {
@@ -266,7 +275,11 @@ func testGetRetriesAfterTimeout() async throws {
         transport: transport
     )
 
-    let endpoint = Endpoint<BookingDTO>(path: "/bookings/b1", method: .get)
+    let endpoint = Endpoint<BookingDTO>(
+        path: "/bookings/b1",
+        method: .get,
+        retryPolicy: .safeRead
+    )
     let booking = try await client.request(endpoint)
 
     XCTAssertEqual(booking, BookingDTO(id: "b1"))
@@ -283,7 +296,11 @@ func testPostWithoutIdempotencyKeyDoesNotRetry() async {
         transport: transport
     )
 
-    let endpoint = Endpoint<BookingDTO>(path: "/payments", method: .post(idempotencyKey: nil))
+    let endpoint = Endpoint<BookingDTO>(
+        path: "/payments",
+        method: .post(idempotencyKey: nil),
+        retryPolicy: .never
+    )
 
     do {
         _ = try await client.request(endpoint)

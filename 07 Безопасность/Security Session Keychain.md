@@ -41,23 +41,37 @@ final class SessionStore: ObservableObject {
 
     private let keychain: TokenStorage
     private let cleanup: SessionCleanup
+    private var restoreTask: Task<Void, Never>?
+    private var sessionEpoch = UUID()
 
     init(keychain: TokenStorage, cleanup: SessionCleanup) {
         self.keychain = keychain
         self.cleanup = cleanup
     }
 
-    func restore() async {
-        guard let token = try? await keychain.readRefreshToken() else {
-            session = nil
-            return
-        }
+    func restore() {
+        restoreTask?.cancel()
+        let epoch = sessionEpoch
 
-        // Здесь обычно идет refresh access token.
-        session = Session(id: UUID(), userID: token.userID, accessToken: token.accessToken)
+        restoreTask = Task { [keychain] in
+            guard let token = try? await keychain.readRefreshToken() else {
+                guard !Task.isCancelled, sessionEpoch == epoch else { return }
+                session = nil
+                return
+            }
+
+            guard !Task.isCancelled, sessionEpoch == epoch else { return }
+
+            // Здесь обычно идет refresh access token.
+            session = Session(id: UUID(), userID: token.userID, accessToken: token.accessToken)
+        }
     }
 
     func logout() async {
+        sessionEpoch = UUID()
+        restoreTask?.cancel()
+        restoreTask = nil
+
         let oldSessionID = session?.id
         session = nil
         try? await keychain.clear()
@@ -93,8 +107,5 @@ actor SessionCleanup {
   Ответ: она может защищать локальный вход, но серверный доступ все равно решает token/session.
 - Sensitive данные не логируются?  
   Ответ: токены, refresh payload и user PII не должны попадать в breadcrumbs.
-
-## Практика на вечер
-Пройди сценарий: login -> открыть экран -> запустить запрос -> logout -> login другим пользователем -> завершить старый запрос. Если старый ответ может изменить новый UI, сессия защищена плохо.
 
 Связано: [Security (practical)](<Security practical.md>), [Networking слой без сюрпризов](<../02 Сеть и данные/Networking слой без сюрпризов.md>), [Structured Concurrency под нагрузкой](<../08 Concurrency/Structured Concurrency под нагрузкой.md>), [Offline-first и консистентность данных](<../02 Сеть и данные/Offline-first и консистентность данных.md>)

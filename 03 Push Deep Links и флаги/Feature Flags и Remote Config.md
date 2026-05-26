@@ -92,7 +92,4 @@ struct PaymentRouteResolver {
 - Тесты покрывают оба варианта?  
   Ответ: минимум один тест на enabled и один на disabled, особенно для navigation.
 
-## Практика на вечер
-Возьми одну фичу с флагом и проверь все входы: кнопка, push, deep link, restore state, shortcut. Если хотя бы один путь обходит flag resolver, флаг стоит не там.
-
 Связано: [App Lifecycle Deep Links Navigation](<App Lifecycle Deep Links Navigation.md>), [Push Notifications в продакшене](<Push Notifications в продакшене.md>), [Unit UI Tests для сложных iOS флоу](<../04 Тесты CI и релиз/Unit UI Tests для сложных iOS флоу.md>), [Observability для iOS](<../06 Производительность и наблюдаемость/Observability для iOS.md>)

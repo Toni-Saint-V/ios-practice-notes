@@ -72,7 +72,4 @@ struct AppEntry: App {
 - Flaky помечаются как debt?  
   Ответ: rerun допустим временно, но flaky должен иметь owner и задачу на устранение.
 
-## Практика на вечер
-Возьми самый нестабильный UI-тест и найди источник случайности: время, сеть, storage, локаль, animation, порядок тестов или стартовое состояние.
-
 Связано: [Unit UI Tests для сложных iOS флоу](<Unit UI Tests для сложных iOS флоу.md>), [Async XCTest](<Async XCTest.md>), [Release checklist для iOS](<Release checklist для iOS.md>), [Crash-free не равно stable](<Crash-free не равно stable.md>)

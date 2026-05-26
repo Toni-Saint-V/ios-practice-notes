@@ -35,11 +35,17 @@ flowchart LR
 Unit-тест должен управлять зависимостью, а не ждать «чуть-чуть».
 
 ```swift
+import Combine
+import XCTest
+
 @MainActor
 final class SearchServiceStub: HotelSearchService {
     private var continuations: [String: CheckedContinuation<[HotelCard], Error>] = [:]
+    private var startWaiters: [String: CheckedContinuation<Void, Never>] = [:]
 
     func searchHotels(query: String) async throws -> [HotelCard] {
+        startWaiters.removeValue(forKey: query)?.resume()
+
         try await withCheckedThrowingContinuation { continuation in
             continuations[query] = continuation
         }
@@ -49,22 +55,54 @@ final class SearchServiceStub: HotelSearchService {
         continuations[query]?.resume(returning: hotels)
         continuations[query] = nil
     }
+
+    func waitUntilStarted(query: String) async {
+        if continuations[query] != nil { return }
+
+        await withCheckedContinuation { continuation in
+            startWaiters[query] = continuation
+        }
+    }
 }
 
 @MainActor
 final class HotelSearchViewModelTests: XCTestCase {
+    private var cancellables: Set<AnyCancellable> = []
+
     func testLateFirstResponseDoesNotOverwriteNewerResult() async {
         let service = SearchServiceStub()
-        let viewModel = HotelSearchViewModel(service: service)
+        let viewModel = HotelSearchViewModel(service: service, debounce: nil)
+
+        let contentShown = expectation(description: "newer search result is shown")
+        viewModel.$state
+            .sink { state in
+                if state == .content(query: "paris", hotels: [.init(id: "1", title: "Paris Center")], isRefreshing: false) {
+                    contentShown.fulfill()
+                }
+            }
+            .store(in: &cancellables)
 
         viewModel.search("par")
+        await service.waitUntilStarted(query: "par")
+
         viewModel.search("paris")
+        await service.waitUntilStarted(query: "paris")
 
         service.complete(query: "paris", with: [.init(id: "1", title: "Paris Center")])
-        await Task.yield()
+        await fulfillment(of: [contentShown], timeout: 1)
+
+        let oldResultWasApplied = expectation(description: "old result was not applied")
+        oldResultWasApplied.isInverted = true
+        viewModel.$state
+            .sink { state in
+                if state == .content(query: "par", hotels: [.init(id: "2", title: "Old result")], isRefreshing: false) {
+                    oldResultWasApplied.fulfill()
+                }
+            }
+            .store(in: &cancellables)
 
         service.complete(query: "par", with: [.init(id: "2", title: "Old result")])
-        await Task.yield()
+        await fulfillment(of: [oldResultWasApplied], timeout: 0.2)
 
         XCTAssertEqual(
             viewModel.state,
@@ -96,7 +134,7 @@ final class SearchFlowUITests: XCTestCase {
 Ключ здесь не в `timeout: 2`, а в том, что сценарий детерминирован: backend стаб, данные известны, accessibility identifiers стабильны.
 
 ## Редкие поломки
-- Тест проходит только потому, что `Task.yield()` случайно дал нужный порядок. Нужен явный сигнал завершения.
+- Тест проходит только потому, что планировщик случайно дал нужный порядок. Нужен явный сигнал завершения.
 - UI-тест зависит от языка устройства: текст кнопки изменился, тест упал.
 - Анимация перекрывает кнопку, и tap иногда не проходит.
 - Тесты делят один keychain/user defaults и влияют друг на друга.
@@ -114,15 +152,5 @@ final class SearchFlowUITests: XCTestCase {
   Ответ: хороший тест не требует угадывать тайминг. Нужен управляемый fake, continuation, clock или явный event.
 - UI-тест проверяет маршрут, а не внутреннюю бизнес-логику?  
   Ответ: UI-тест должен кликать путь пользователя. Правила retry, сортировки и маппинга дешевле держать ниже.
-
-## Практика на вечер
-Возьми флоу «поиск → результат → детали». Напиши:
-
-- unit-тест на поздний ответ;
-- unit-тест на ошибку после кешированного content;
-- UI-тест на успешный маршрут со стабом;
-- UI-тест на empty state без реальной сети.
-
-Мини-челлендж: добавь fail-fast проверку, что приложение запущено именно в `UITEST_MODE`, иначе тест не стартует.
 
 Связано: [Async XCTest](<Async XCTest.md>), [SwiftUI state identity effects](<../01 SwiftUI и UI/SwiftUI state identity effects.md>), [Networking слой без сюрпризов](<../02 Сеть и данные/Networking слой без сюрпризов.md>)

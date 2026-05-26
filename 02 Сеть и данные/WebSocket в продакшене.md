@@ -63,25 +63,7 @@ actor OrderSocketClient {
     func events(token: String, lastVersion: Int) -> AsyncThrowingStream<OrderEvent, Error> {
         AsyncThrowingStream { continuation in
             let listenTask = Task {
-                do {
-                    var request = URLRequest(url: url)
-                    request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-                    request.setValue("\(lastVersion)", forHTTPHeaderField: "X-Last-Version")
-
-                    let socket = session.webSocketTask(with: request)
-                    task = socket
-                    socket.resume()
-
-                    while !Task.isCancelled {
-                        let message = try await socket.receive()
-                        let event = try decode(message)
-                        continuation.yield(event)
-                    }
-                } catch is CancellationError {
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
-                }
+                await listen(token: token, lastVersion: lastVersion, continuation: continuation)
             }
 
             continuation.onTermination = { _ in
@@ -91,7 +73,35 @@ actor OrderSocketClient {
         }
     }
 
-    func close() {
+    private func listen(
+        token: String,
+        lastVersion: Int,
+        continuation: AsyncThrowingStream<OrderEvent, Error>.Continuation
+    ) async {
+        do {
+            close()
+
+            var request = URLRequest(url: url)
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            request.setValue("\(lastVersion)", forHTTPHeaderField: "X-Last-Version")
+
+            let socket = session.webSocketTask(with: request)
+            task = socket
+            socket.resume()
+
+            while !Task.isCancelled {
+                let message = try await socket.receive()
+                let event = try decode(message)
+                continuation.yield(event)
+            }
+        } catch is CancellationError {
+            continuation.finish()
+        } catch {
+            continuation.finish(throwing: error)
+        }
+    }
+
+    private func close() {
         task?.cancel(with: .goingAway, reason: nil)
         task = nil
     }
@@ -155,10 +165,5 @@ actor OrderStore {
   Ответ: не должно. Нужен session guard или owner id на уровне store/apply.
 - UI показывает реальное состояние или верит факту `socket connected`?  
   Ответ: `connected` говорит только о канале. Свежесть доменных данных подтверждает snapshot/version.
-
-## Практика на вечер
-Смоделируй поток: snapshot версии 10, потом события 11, 12, дубль 12, старое 9, новое 13. Напиши тест на store: применяются только 11, 12 и 13.
-
-Мини-челлендж: добавь reconnect с backoff, но не переподключайся после logout и ручного закрытия экрана.
 
 Связано: [Networking слой без сюрпризов](<Networking слой без сюрпризов.md>), [Structured Concurrency под нагрузкой](<../08 Concurrency/Structured Concurrency под нагрузкой.md>), [Observability](<../06 Производительность и наблюдаемость/Observability.md>), [Async XCTest](<../04 Тесты CI и релиз/Async XCTest.md>)

@@ -143,9 +143,4 @@ actor HomeCache {
 - Actor защищает данные или просто прячет проблему?  
   Ответ: actor сериализует доступ, но не решает доменную актуальность. Старые данные он сохранит так же аккуратно, как новые.
 
-## Практика на вечер
-Найди в проекте экран с несколькими async-загрузками. Собери их под один родительский task. Добавь тест: старт загрузки, cancel, завершение fake API, state не меняется после отмены.
-
-Мини-челлендж: добавь session id guard, чтобы ответ старой сессии не записался после logout/login.
-
 Связано: [Swift Concurrency (advanced)](<Swift Concurrency advanced.md>), [Actors и Sendable](<Actors и Sendable.md>), [SwiftUI state identity effects](<../01 SwiftUI и UI/SwiftUI state identity effects.md>), [Networking слой без сюрпризов](<../02 Сеть и данные/Networking слой без сюрпризов.md>)

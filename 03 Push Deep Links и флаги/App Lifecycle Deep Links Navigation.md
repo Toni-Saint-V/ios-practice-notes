@@ -78,6 +78,7 @@ struct RouteParser {
 final class RouteCoordinator: ObservableObject {
     private var pendingRoutes: [AppRoute] = []
     private var isReady = false
+    private var isDraining = false
     private let resolver: RouteResolver
     private let navigator: AppNavigator
 
@@ -97,20 +98,24 @@ final class RouteCoordinator: ObservableObject {
     }
 
     private func drainIfPossible() {
-        guard isReady else { return }
+        guard isReady, !isDraining, !pendingRoutes.isEmpty else { return }
+        isDraining = true
 
-        while !pendingRoutes.isEmpty {
+        Task {
+            defer {
+                isDraining = false
+                drainIfPossible()
+            }
             let route = pendingRoutes.removeFirst()
 
-            Task {
-                switch await resolver.resolve(route) {
-                case .open(let route):
-                    navigator.open(route)
-                case .requireLogin(let route):
-                    navigator.openLogin(returnTo: route)
-                case .fallback(let message):
-                    navigator.showFallback(message)
-                }
+            switch await resolver.resolve(route) {
+            case .open(let route):
+                navigator.open(route)
+            case .requireLogin(let route):
+                pendingRoutes.removeAll()
+                navigator.openLogin(returnTo: route)
+            case .fallback(let message):
+                navigator.showFallback(message)
             }
         }
     }
@@ -141,15 +146,5 @@ final class RouteCoordinator: ObservableObject {
   Ответ: да: объект удален, нет доступа, feature flag выключен. Белый экран или молчаливый home — плохой ответ.
 - Не открывает ли deep link экран до готовности root navigation?  
   Ответ: не должен. Навигация должна стартовать после session restore и построения root.
-
-## Практика на вечер
-Сделай route pipeline для `booking/:id`:
-
-- parser test на валидную и битую ссылку;
-- resolver test на guest/auth/forbidden/deleted booking;
-- coordinator test: route пришел до ready, открылся после ready;
-- UI smoke: universal link ведет в нужный экран через stub.
-
-Мини-челлендж: добавь дедупликацию, чтобы один и тот же route не открылся дважды после push tap и universal link.
 
 Связано: [Push Notifications в продакшене](<Push Notifications в продакшене.md>), [SwiftUI state identity effects](<../01 SwiftUI и UI/SwiftUI state identity effects.md>)
